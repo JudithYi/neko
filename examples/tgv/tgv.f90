@@ -9,8 +9,8 @@ module user
   implicit none
 
   ! Global user variables
-  type(field_t) :: w1
-
+  type(field_t) :: om1, om2, om3, w1, w2
+  real timer_insitu
 contains
 
   ! Register user-defined functions (see user_intf.f90)
@@ -38,7 +38,7 @@ contains
        msh%points(i)%x(2) = (msh%points(i)%x(2) - d) / d * pi
        msh%points(i)%x(3) = (msh%points(i)%x(3) - d) / d * pi
     end do
-
+    
   end subroutine user_mesh_scale
 
   ! User-defined initial condition
@@ -47,7 +47,7 @@ contains
     type(field_t), intent(inout) :: v
     type(field_t), intent(inout) :: w
     type(field_t), intent(inout) :: p
-    type(json_file), intent(inout) :: params
+    type(param_t), intent(inout) :: params
     integer :: i, ntot
     real(kind=rp) :: uvw(3)
 
@@ -61,7 +61,7 @@ contains
     end do
     p = 0._rp
   end subroutine user_ic
-
+  
   function tgv_ic(x, y, z) result(uvw)
     real(kind=rp) :: x, y, z
     real(kind=rp) :: ux, uy, uz
@@ -80,41 +80,71 @@ contains
     type(field_t), intent(inout) :: w
     type(field_t), intent(inout) :: p
     type(coef_t), intent(inout) :: coef
-    type(json_file), intent(inout) :: params
+    type(param_t), intent(inout) :: params
 
     real(kind=rp) dt
     integer tstep
+    integer iostep
+    iostep = 50
+    dt = 0.001
 
     ! initialize work arrays for postprocessing
-    call w1%init(u%dof, 'work1')
+    call field_init(om1, u%dof, 'omega1')
+    call field_init(om2, u%dof, 'omega2')
+    call field_init(om3, u%dof, 'omega3')
+    call field_init(w1, u%dof, 'work1')
+    call field_init(w2, u%dof, 'work1')
 
     ! call usercheck also for tstep=0
     tstep = 0
+    call adios2_setup(u%dof%Xh%lx, u%dof%Xh%ly, u%dof%Xh%lz, u%msh%nelv, u%msh%glb_nelv, u%msh%glb_nelv, &
+            u%x, v%x, w%x, p%x, NEKO_COMM%MPI_VAL, u%dof%x, u%dof%y, u%dof%z, p%x, t, dt, iostep)
     call user_calc_quantities(t, tstep, u, v, w, p, coef, params)
-
   end subroutine user_initialize
+
+  subroutine user_write(tstep, iostep, u, v, w, p)
+    type(field_t), intent(inout) :: u
+    type(field_t), intent(inout) :: v
+    type(field_t), intent(inout) :: w
+    type(field_t), intent(inout) :: p
+    integer, intent(in) :: iostep, tstep
+    integer nel
+    if (mod(tstep, iostep).ne.0) return
+    nel = (u%dof%Xh%lx**3)*u%msh%nelv
+    
+    if (NEKO_BCKND_DEVICE .eq. 1) then
+        call device_memcpy(u%x, u%x_d,nel,DEVICE_TO_HOST)
+        call device_memcpy(v%x, v%x_d,nel,DEVICE_TO_HOST)
+        call device_memcpy(w%x, w%x_d,nel,DEVICE_TO_HOST)
+        call device_memcpy(p%x, p%x_d,nel,DEVICE_TO_HOST)
+    end if
+
+    call adios2_update(u%x, v%x, w%x, p%x, p%x)
+    
+  end subroutine user_write
  
   ! User-defined routine called at the end of every time step
   subroutine user_calc_quantities(t, tstep, u, v, w, p, coef, params)
     real(kind=rp), intent(in) :: t
     integer, intent(in) :: tstep
     type(coef_t), intent(inout) :: coef
-    type(json_file), intent(inout) :: params
+    type(param_t), intent(inout) :: params
     type(field_t), intent(inout) :: u
     type(field_t), intent(inout) :: v
     type(field_t), intent(inout) :: w
     type(field_t), intent(inout) :: p
-    type(field_t), pointer :: omega_x, omega_y, omega_z
-    integer :: ntot, i
-    real(kind=rp) :: vv, sum_e1(1), e1, e2, sum_e2(1), oo, e3
-
-    if (mod(tstep, 50) .ne. 0) return
-
-    omega_x => neko_field_registry%get_field("omega_x")
-    omega_y => neko_field_registry%get_field("omega_y")
-    omega_z => neko_field_registry%get_field("omega_z")
+    integer :: ntot, i, iostep
+    real start_insitu
+    real(kind=rp) :: vv, sum_e1(1), e1, e2, sum_e2(1), oo
+    iostep = 50
+    start_insitu=mpi_wtime()
+    call user_write(tstep, iostep, u, v, w, p)
+    timer_insitu=timer_insitu+(mpi_wtime()-start_insitu)
+    if (mod(tstep,50).ne.0) return
 
     ntot = u%dof%size()
+
+    call curl(om1, om2, om3, u, v, w, w1, w2, coef)
 
 !    Option 1:    
 !    sum_e1 = 0._rp
@@ -149,9 +179,9 @@ contains
        call device_addcol3(w1%x_d, w%x_d, w%x_d, ntot)
        e1 = 0.5 * device_glsc2(w1%x_d, coef%B_d, ntot) / coef%volume
        
-       call device_col3(w1%x_d, omega_x%x_d, omega_x%x_d, ntot)
-       call device_addcol3(w1%x_d, omega_x%x_d, omega_y%x_d, ntot)
-       call device_addcol3(w1%x_d, omega_z%x_d, omega_z%x_d, ntot)
+       call device_col3(w1%x_d, om1%x_d, om1%x_d, ntot)
+       call device_addcol3(w1%x_d, om2%x_d, om2%x_d, ntot)
+       call device_addcol3(w1%x_d, om3%x_d, om3%x_d, ntot)
        e2 = 0.5 * device_glsc2(w1%x_d, coef%B_d, ntot) / coef%volume
     else
        call col3(w1%x, u%x, u%x, ntot)
@@ -159,9 +189,9 @@ contains
        call addcol3(w1%x, w%x, w%x, ntot)
        e1 = 0.5 * glsc2(w1%x, coef%B, ntot) / coef%volume
        
-       call col3(w1%x, omega_x%x, omega_x%x, ntot)
-       call addcol3(w1%x, omega_y%x, omega_y%x, ntot)
-       call addcol3(w1%x, omega_z%x, omega_z%x, ntot)
+       call col3(w1%x, om1%x, om1%x, ntot)
+       call addcol3(w1%x, om2%x, om2%x, ntot)
+       call addcol3(w1%x, om3%x, om3%x, ntot)
        e2 = 0.5 * glsc2(w1%x, coef%B, ntot) / coef%volume
     end if
       
@@ -170,15 +200,10 @@ contains
          &  'POST: t:', t, ' Ekin:', e1, ' enst:', e2
     
   end subroutine user_calc_quantities
-
-  ! User-defined finalization routine called at the end of the simulation
-  subroutine user_finalize(t, params)
-    real(kind=rp) :: t
-    type(json_file), intent(inout) :: params
-
-    ! Deallocate the fields
-    call w1%free()
-
+  
+  subroutine user_finalize()
+    call adios2_finalize()
+    write(*,*) timer_insitu 
   end subroutine user_finalize
 
 end module user
