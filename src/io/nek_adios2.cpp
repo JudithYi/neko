@@ -195,7 +195,7 @@ extern "C" void adios2_setup_(
     /* VTK points is one table with the coordinates as columns OR separate 1D variables for each coordinate */
     ADIOS_points = io.DefineVariable<float>("points", {total1, 3}, {start1, 0}, {count1, 3});
     points.resize(count1 * 3);
-    convert_points_connectivity(x_in, y_in, z_in, points.data(), connectivity.data(), lx1, ly1, lz1, nelv, nelbv, ture);
+    convert_points_connectivity(x_in, y_in, z_in, points.data(), connectivity.data(), lx1, ly1, lz1, nelv, nelbv, true);
 
     io.DefineAttribute<std::string>("Fides_Coordinates_Variable", "points");
     io.DefineAttribute<std::string>("Fides_Connectivity_Variable", "connectivity");
