@@ -312,5 +312,27 @@ extern "C" void adios2_finalize_(){
     std::cout <<  "rank: " << rank << " sin-situ time: " << dataTime << "s, total time: " << (std::clock() - startTotal) / (double) CLOCKS_PER_SEC << "s. " << std::endl;
 }
 
-
+extern "C" void adios2_stream_(
+    const int *lglel,
+    const double *pr,
+    const double *v,
+    const double *u,
+    const double *w,
+    const double *mass1,
+    const double *temp
+){
+    startT = std::clock();
+    // Begin a step of the writer. Remember that this will write to
+    // the variable globalarray that will be read by the compressor.
+    writer.BeginStep();
+    writer.Put<double>(p, pr);
+    writer.Put<double>(vx, v);
+    writer.Put<double>(vy, u);
+    writer.Put<double>(vz, w);
+    writer.Put<double>(bm1, mass1);
+    writer.Put<int>(lglelw, lglel);
+    //writer.Put<double>(t, temp);
+    writer.EndStep();
+    dataTime += (std::clock() - startT) / (double) CLOCKS_PER_SEC;
+}
 
