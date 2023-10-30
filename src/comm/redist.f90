@@ -44,6 +44,7 @@ module redist
   use nmsh
   use zone
   use element
+  use utils, only:neko_error
   implicit none
   private
 
