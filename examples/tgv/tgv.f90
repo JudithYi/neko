@@ -9,7 +9,7 @@ module user
   implicit none
 
   ! Global user variables
-  type(field_t) :: om1, om2, om3, w1, w2
+  type(field_t) :: w1,w2
   real timer_insitu
 contains
 
@@ -47,7 +47,7 @@ contains
     type(field_t), intent(inout) :: v
     type(field_t), intent(inout) :: w
     type(field_t), intent(inout) :: p
-    type(param_t), intent(inout) :: params
+    type(json_file), intent(inout) :: params
     integer :: i, ntot
     real(kind=rp) :: uvw(3)
 
@@ -80,7 +80,7 @@ contains
     type(field_t), intent(inout) :: w
     type(field_t), intent(inout) :: p
     type(coef_t), intent(inout) :: coef
-    type(param_t), intent(inout) :: params
+    type(json_file), intent(inout) :: params
 
     real(kind=rp) dt
     integer tstep
@@ -89,12 +89,8 @@ contains
     dt = 0.001
 
     ! initialize work arrays for postprocessing
-    call field_init(om1, u%dof, 'omega1')
-    call field_init(om2, u%dof, 'omega2')
-    call field_init(om3, u%dof, 'omega3')
-    call field_init(w1, u%dof, 'work1')
-    call field_init(w2, u%dof, 'work1')
-
+    call w1%init(u%dof, 'work1')
+    call w2%init(u%dof, 'work2')
     ! call usercheck also for tstep=0
     tstep = 0
     call adios2_setup(u%dof%Xh%lx, u%dof%Xh%ly, u%dof%Xh%lz, u%msh%nelv, u%msh%glb_nelv, u%msh%glb_nelv, &
@@ -128,11 +124,12 @@ contains
     real(kind=rp), intent(in) :: t
     integer, intent(in) :: tstep
     type(coef_t), intent(inout) :: coef
-    type(param_t), intent(inout) :: params
+    type(json_file), intent(inout) :: params
     type(field_t), intent(inout) :: u
     type(field_t), intent(inout) :: v
     type(field_t), intent(inout) :: w
     type(field_t), intent(inout) :: p
+    type(field_t), pointer :: om1, om2, om3
     integer :: ntot, i, iostep
     real start_insitu
     real(kind=rp) :: vv, sum_e1(1), e1, e2, sum_e2(1), oo
@@ -141,6 +138,10 @@ contains
     call user_write(tstep, iostep, u, v, w, p)
     timer_insitu=timer_insitu+(mpi_wtime()-start_insitu)
     if (mod(tstep,50).ne.0) return
+
+    om1 => neko_field_registry%get_field("omega_x")
+    om2 => neko_field_registry%get_field("omega_y")
+    om3 => neko_field_registry%get_field("omega_z")
 
     ntot = u%dof%size()
 
@@ -201,7 +202,9 @@ contains
     
   end subroutine user_calc_quantities
   
-  subroutine user_finalize()
+  subroutine user_finalize(t, params)
+    real(kind=rp) :: t
+    type(json_file), intent(inout) :: params
     call adios2_finalize()
     write(*,*) timer_insitu 
   end subroutine user_finalize
