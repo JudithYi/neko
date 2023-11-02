@@ -211,7 +211,7 @@ contains
        !! const double *zml, const int *if_asynchronous,
        !! const int *comm_int)
        subroutine c_adios2_setup(npts, nelv, nelb, nelgv, nelgt, x, y, &
-                             z, asynch, comm) bind(C,name="adios2_setup_")
+                             z, asynch, comm) bind(C,name="adios2_setup_data_streamer_")
          use, intrinsic :: ISO_C_BINDING
          import c_rp
          implicit none
@@ -240,7 +240,7 @@ contains
     
     interface
        !> C-definition is: void adios2_finalize_()
-       subroutine c_adios2_finalize() bind(C,name="adios2_finalize_")
+       subroutine c_adios2_finalize() bind(C,name="adios2_finalize_data_streamer_")
          use, intrinsic :: ISO_C_BINDING
          implicit none
        end subroutine c_adios2_finalize

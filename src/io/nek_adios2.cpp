@@ -35,6 +35,28 @@ std::vector<int> connectivity;
 std::vector<float> points;
 int step; 
 
+/* DATA STREAMER */
+int ifile;
+int ifilew;
+int ifstream;
+int decide_stream_global;
+adios2::IO io_head;
+adios2::IO io_asynchronous;
+adios2::Engine writer_head;
+adios2::Engine writer_st;
+adios2::Variable<double> bm1;
+adios2::Variable<int> lglelw;
+adios2::Variable<double> p_st;
+adios2::Variable<double> vx_st;
+adios2::Variable<double> vy_st;
+adios2::Variable<double> vz_st;
+adios2::Variable<double> bm1_st;
+adios2::Variable<int> lglelw_st;
+adios2::Variable<double> x;
+adios2::Variable<double> y;
+adios2::Variable<double> z;
+/* DATA STREAMER */
+
 double dataTime = 0.0;
 std::clock_t startT;
 std::clock_t startTotal;
@@ -315,24 +337,125 @@ extern "C" void adios2_finalize_(){
 extern "C" void adios2_stream_(
     const int *lglel,
     const double *pr,
-    const double *v,
     const double *u,
+    const double *v,
     const double *w,
     const double *mass1,
     const double *temp
 ){
     startT = std::clock();
-    // Begin a step of the writer. Remember that this will write to
-    // the variable globalarray that will be read by the compressor.
-    writer.BeginStep();
-    writer.Put<double>(p, pr);
-    writer.Put<double>(vx, v);
-    writer.Put<double>(vy, u);
-    writer.Put<double>(vz, w);
-    writer.Put<double>(bm1, mass1);
-    writer.Put<int>(lglelw, lglel);
-    //writer.Put<double>(t, temp);
-    writer.EndStep();
+    // Begin a step of the writer
+    writer_st.BeginStep();
+    writer_st.Put<double>(p_st, pr);
+    writer_st.Put<double>(vx_st, u);
+    writer_st.Put<double>(vy_st, v);
+    writer_st.Put<double>(vz_st, w);
+    writer_st.Put<double>(bm1_st, mass1);
+    writer_st.Put<int>(lglelw_st, lglel);
+    writer_st.EndStep();
     dataTime += (std::clock() - startT) / (double) CLOCKS_PER_SEC;
 }
 
+extern "C" void adios2_setup_data_streamer_(
+    const int *nval,
+    const int *nelvin,
+    const int *nelb,
+    const int *nelgv,
+    const int *nelgt,
+    const double *xml,
+    const double *yml,
+    const double *zml,
+    const int *if_asynchronous,
+    const int *comm_int
+){
+    std::string configFile="adios2_config/config.xml";
+    MPI_Comm comm = MPI_Comm_f2c(*comm_int);
+    adios = adios2::ADIOS(configFile, comm);
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+    // Compressor writer.
+    io = adios.DeclareIO("writer");
+    // Mesh writer.
+    io_head = adios.DeclareIO("writer0");
+    // Asynchronous writer.
+    io_asynchronous = adios.DeclareIO("writerISMPI");
+
+    // Determine if asyncrhonous operation will be needed for this set up
+    unsigned int decide_stream = static_cast<unsigned int>((*if_asynchronous));
+    decide_stream_global = decide_stream;
+    
+    // Number of elements in my rank.
+    unsigned int nelv = static_cast<unsigned int>((*nelvin));
+
+    // Determine where my rank writes in the global array according to number of element in previous ranks
+    unsigned int start = static_cast<unsigned int>(*nelb);
+    start *= static_cast<unsigned int>(*nval);
+
+    // n is count, i.e number of entries in the array in my rank
+    unsigned int n = static_cast<unsigned int> (*nval) * nelv;
+    // gn is the total size of the arrays, not per io rank 
+    unsigned int gn = static_cast<unsigned int>((*nelgv)*(*nval));
+    std::cout << rank << ": " << gn << ", " << start << "," << n << std::endl;
+
+    // Create the adios2 variables for writer that depend on the current start and n
+    p = io.DefineVariable<double>("P_OUT", {gn}, {start}, {n});
+    vx = io.DefineVariable<double>("VX_OUT", {gn}, {start}, {n});
+    vy = io.DefineVariable<double>("VY_OUT", {gn}, {start}, {n});
+    vz = io.DefineVariable<double>("VZ_OUT", {gn}, {start}, {n});
+    bm1 = io.DefineVariable<double>("BM1_OUT", {gn}, {start}, {n});
+
+    // Create the adios2 variables for writer0
+    x = io_head.DefineVariable<double>("X", {gn}, {start}, {n});
+    y = io_head.DefineVariable<double>("Y", {gn}, {start}, {n});
+    z = io_head.DefineVariable<double>("Z", {gn}, {start}, {n});
+
+    // If the process is asynchronous, define the relevant variables for writer_st
+    if (decide_stream == 1){
+	    p_st = io_asynchronous.DefineVariable<double>("P", {gn}, {start}, {n});
+	    vx_st = io_asynchronous.DefineVariable<double>("VX", {gn}, {start}, {n});
+	    vy_st = io_asynchronous.DefineVariable<double>("VY", {gn}, {start}, {n});
+	    vz_st = io_asynchronous.DefineVariable<double>("VZ", {gn}, {start}, {n});
+	    bm1_st = io_asynchronous.DefineVariable<double>("BM1", {gn}, {start}, {n});
+    }
+
+
+    // Do everything again for the global indices 
+    nelv = static_cast<unsigned int>((*nelvin));
+    start = static_cast<unsigned int>(*nelb);
+    n = static_cast<unsigned int> (nelv);
+    gn = static_cast<unsigned int>((*nelgv));
+    // Define variable for compression writer
+    lglelw = io.DefineVariable<int>("LGLEL_OUT", {gn}, {start}, {n});
+    // Define variable for asyncrhonous writet
+    if (decide_stream == 1){
+    	lglelw_st = io_asynchronous.DefineVariable<int>("LGLEL", {gn}, {start}, {n});
+    }
+
+    // Write the mesh information only once (Currently commented out).
+    //writer_head = io_head.Open("geo.bp", adios2::Mode::Write);
+    //writer_head.Put<double>(x, xml);
+    //writer_head.Put<double>(y, yml);
+    //writer_head.Put<double>(z, yml);
+    //writer_head.Close();
+    //if(!rank)
+	//std::cout << "geo.bp written" << std::endl;
+    
+    // If asyncrhonous execution, open the global array
+    if (decide_stream == 1){
+	std::cout << "create global array" << std::endl;
+    	writer_st = io_asynchronous.Open("globalArray", adios2::Mode::Write);
+    }
+
+    // Initialize global variables for writing. This could be done in global definition    
+    ifile = 0 ;
+    ifilew = 0 ;
+}
+
+extern "C" void adios2_finalize_data_streamer_(){
+    if (decide_stream_global == 1){
+	std::cout << "Close global array" << std::endl;
+    	writer_st.Close();
+    	std::cout <<  "rank: " << rank << " in-situ time: " << dataTime << "s." << std::endl;
+    }
+
+}
