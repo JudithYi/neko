@@ -153,6 +153,9 @@ fi
 
 # Checks for ADIOS2
 AX_ADIOS2
+if test "x${with_adios2}" = xyes; then
+     LIBS="$LIBS $ADIOS2_LIBS -lstdc++"
+fi
 
 # Checks for gslib
 AX_GSLIB
