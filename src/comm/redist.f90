@@ -42,7 +42,7 @@ module redist
   use comm
   use mesh
   use nmsh
-  use zone
+  use facet_zone
   use element
   use utils, only:neko_error
   implicit none
@@ -366,7 +366,7 @@ contains
   !> Fill redistribution list for zone data
   subroutine redist_zone(msh, z, type, parts, new_dist, label)
     type(mesh_t), intent(inout) :: msh
-    class(zone_t), intent(in) :: z
+    class(facet_zone_t), intent(in) :: z
     integer, intent(in) :: type
     type(mesh_fld_t), intent(in) :: parts
     type(stack_nz_t), intent(inout), allocatable :: new_dist(:)
@@ -381,7 +381,7 @@ contains
     end if
     
     select type(zp => z)
-    type is (zone_periodic_t)
+    type is (facet_zone_periodic_t)
        do i = 1, zp%size
           zone_el =  zp%facet_el(i)%x(2)
           nmsh_zone%e = zp%facet_el(i)%x(2) + msh%offset_el
@@ -392,7 +392,7 @@ contains
           nmsh_zone%type = type          
           call new_dist(parts%data(zone_el))%push(nmsh_zone)
        end do
-    type is (zone_t)
+    type is (facet_zone_t)
        do i = 1, zp%size
           zone_el =  zp%facet_el(i)%x(2)
           nmsh_zone%e = zp%facet_el(i)%x(2) + msh%offset_el
