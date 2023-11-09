@@ -19,17 +19,15 @@ AC_DEFUN([AX_ADIOS2],[
 	   if test x"${ADIOS2CONF}" == x"yes"; then
 	      ADIOS2_CXXFLAGS=`adios2-config --cxx-flags`
 	      CXXFLAGS="$ADIOS2_CXXFLAGS $CXXFLAGS"
-
-	      ADIOS2_LDFLAGS=`adios2-config --cxx-libs`
-	      LDFLAGS="$ADIOS2_LDFLAGS $LDFLAGS"
-      	      with_adios2=yes
+	      ADIOS2_LIBS=`adios2-config --cxx-libs`
+	      with_adios2=yes
 	      have_adios2=yes
 	      AC_SUBST(have_adios2)
               AC_DEFINE(HAVE_ADIOS2,1,[Define if you have ADIOS2.])
-	    else
+	   else
 	      with_adios2=no
-	    fi
-            PATH="$PATH_SAVED"
+	   fi
+         PATH="$PATH_SAVED"
 	    
 	fi
 ])
