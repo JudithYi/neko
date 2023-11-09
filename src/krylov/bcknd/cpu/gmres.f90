@@ -42,6 +42,7 @@ module gmres
   use bc, only : bc_list_t, bc_list_apply
   use math, only : glsc3, rzero, rone, copy, sub2, cmult2
   use comm
+  use neko_config
   implicit none
   private
 

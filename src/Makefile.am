@@ -245,8 +245,7 @@ neko_c_SOURCES = comm/comm_wrapper.c\
 		 common/sighdl.c\
 		 common/cpuid.c\
                  gs/bcknd/device/device_mpi.c\
-                 math/bcknd/device/device_mpi_reduce.c\
-		 comm/comm_c.c
+                 math/bcknd/device/device_mpi_reduce.c
 
 libneko_a_SOURCES = $(neko_fortran_SOURCES)\
                     $(neko_c_SOURCES)
@@ -518,8 +517,7 @@ EXTRA_DIST = \
 	device/hip/check.h\
 	device/cuda/check.h\
 	comm/comm.h\
-	common/neko_log.h\
-	comm/comm_c.h
+	common/neko_log.h
 
 # Fortran deps. (updated with makedepf90 via target 'depend')
 include	.depends

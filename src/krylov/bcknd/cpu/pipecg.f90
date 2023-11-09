@@ -42,6 +42,7 @@ module pipecg
   use bc, only : bc_list_t, bc_list_apply
   use math, only : glsc3, rzero, copy
   use comm
+  use neko_config
   implicit none
   private
 
