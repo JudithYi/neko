@@ -203,6 +203,10 @@ extern "C" void adios2_setup_(
         nelbv += temp[i];
         nelbt += temp1[i];
     }
+    total1 = static_cast<std::size_t>(lxyz1 * nelgv);
+    start1 = static_cast<std::size_t>(lxyz1 * nelbv);
+    count1 = static_cast<std::size_t>(lxyz1 * nelv);
+    start3 = static_cast<std::size_t>(lxyz1 * nelbt);
     io = adios.DeclareIO("writer");
     /*
      *  Fides schema
@@ -269,11 +273,6 @@ extern "C" void adios2_setup_(
     vDOUBLE[0] = *t_start_in;
     vDOUBLE[1] = *dt_in;
     init_double_const = io.DefineVariable<double>("DOUBLE_CONST", {init_total}, {init_start}, {init_count});
-
-    total1 = static_cast<std::size_t>(lxyz1 * nelgv);
-    start1 = static_cast<std::size_t>(lxyz1 * nelbv);
-    count1 = static_cast<std::size_t>(lxyz1 * nelv);
-    start3 = static_cast<std::size_t>(lxyz1 * nelbt);
 
     vx = io.DefineVariable<double>("VX", {total1}, {start1}, {count1});
     vy = io.DefineVariable<double>("VY", {total1}, {start1}, {count1});
