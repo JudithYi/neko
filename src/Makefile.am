@@ -245,9 +245,8 @@ neko_c_SOURCES = comm/comm_wrapper.c\
 		 common/sighdl.c\
 		 common/cpuid.c\
                  gs/bcknd/device/device_mpi.c\
-                 math/bcknd/device/device_mpi_reduce.c\
-		 comm/comm_c.c
-
+                 math/bcknd/device/device_mpi_reduce.c
+				
 libneko_a_SOURCES = $(neko_fortran_SOURCES)\
                     $(neko_c_SOURCES)
 
@@ -385,6 +384,18 @@ neko_LDADD = \
 
 endif
 
+if ENABLE_PYTHON
+io/nek_pythono: io/nek_pythono.cpp
+	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) -o $@ -c $^
+
+libneko_a_LIBADD = \
+	io/nek_pythono.o
+
+neko_LDADD = \
+	io/nek_pythono.o
+
+endif
+
 
 bin_PROGRAMS = neko
 neko_SOURCES = $(libneko_a_SOURCES) driver.f90
@@ -518,8 +529,7 @@ EXTRA_DIST = \
 	device/hip/check.h\
 	device/cuda/check.h\
 	comm/comm.h\
-	common/neko_log.h\
-	comm/comm_c.h
+	common/neko_log.h
 
 # Fortran deps. (updated with makedepf90 via target 'depend')
 include	.depends
