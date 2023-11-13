@@ -48,6 +48,7 @@ module gmres_device
                           device_sub2
   use device
   use comm
+  use neko_config
   use, intrinsic :: iso_c_binding
   implicit none
   private

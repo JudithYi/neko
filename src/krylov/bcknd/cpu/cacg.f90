@@ -44,6 +44,7 @@ module cacg
   use utils, only : neko_warning
   use comm
   use mxm_wrapper
+  use neko_config
   implicit none
   private
   
