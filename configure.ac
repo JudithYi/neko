@@ -157,6 +157,11 @@ if test "x${with_adios2}" = xyes; then
      LIBS="$LIBS $ADIOS2_LIBS -lstdc++"
 fi
 
+AX_PYTHON
+if test "x${have_python}" = xyes; then
+     LIBS="$LIBS -lstdc++"
+fi
+
 # Checks for gslib
 AX_GSLIB
 
@@ -264,6 +269,7 @@ AM_CONDITIONAL([ENABLE_ADIOS2], [test "x${have_adios2}" = xyes])
 AM_CONDITIONAL([ENABLE_CUDA], [test "x${have_cuda}" = xyes])
 AM_CONDITIONAL([ENABLE_HIP], [test "x${have_hip}" = xyes])
 AM_CONDITIONAL([ENABLE_OPENCL], [test "x${have_opencl}" = xyes])
+AM_CONDITIONAL([ENABLE_PYTHON], [test "x${have_python}" = xyes])
 
 # Set device dependent flags
 AC_SUBST(CUDA_ARCH)
