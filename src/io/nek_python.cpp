@@ -1,4 +1,3 @@
-#include <adios2.h>
 #include <mpi.h>
 #include <string>
 #include <iostream>
@@ -19,7 +18,7 @@ int nelv;
 int nelgv, nelgt;
 int nelbv, nelbt;
 double dataTime = 0.0;
-std::clock_t startT;
+std::clock_t startT,startTotal;
 int rank, size;
 double setupTime = 0.0;
 double closeTime = 0.0;
@@ -73,8 +72,8 @@ extern "C" void python_setup_(
     total_size = nelgv * lxyz1;
     local_size = nelv * lxyz1;
     char* pPath;
-    nval_local = *nval;
-    vVX.resize(local_size);
+    nval_local = lxyz1;
+    vVX.resize(nelv);
     
     //setenv("PYTHONPATH",".",1);
     Py_Initialize ();
@@ -101,14 +100,14 @@ extern "C" void python_setup_(
 
     if(PyArray_API == NULL){import_array();}
     
-    py_sample_freq_val = PyLong_FromLong(20);
+    py_sample_freq_val = PyLong_FromLong(1);
     py_uncertOpts = PyDict_New();
     PyDict_SetItemString(py_uncertOpts, (char*)"sample_freq", py_sample_freq_val);
 
-    py_max_acf_lag_val = PyLong_FromLong(500);
+    py_max_acf_lag_val = PyLong_FromLong(50);
     PyDict_SetItemString(py_uncertOpts, (char*)"max_acf_lag", py_max_acf_lag_val);
 
-    py_output_freq_val = PyLong_FromLong(500);
+    py_output_freq_val = PyLong_FromLong(50);
     PyDict_SetItemString(py_uncertOpts, (char*)"output_freq", py_output_freq_val);
 
     PyDict_SetItemString(py_uncertOpts, (char*)"compute_uncert_estim", Py_True);
@@ -132,7 +131,7 @@ extern "C" void python_setup_(
             return;
     }
     if(!rank) std::cout << "IMACF done" << std::endl;
-    dims[0]=local_size;
+    dims[0]=nelv;
     
     py_vx = PyArray_SimpleNewFromData(1, dims, NPY_DOUBLE, vVX.data());
     py_name = PyUnicode_FromString((char*)"update_stats");
@@ -157,9 +156,14 @@ extern "C" void python_update_(
     const double *t_in
 ){
     startT = std::clock();
-    py_currentStep=PyLong_FromLong(currentStep);
-    for(i = 0; i < local_size; ++i){
-        vVX[i] = v[i];
+    py_currentStep=PyLong_FromLong(currentStep);        
+    double nval_double=static_cast<double>(nval_local);
+
+    for(int i = 0; i < nelv; ++i){
+        vVX[i] = v[i*nval_local] / nval_double;
+	for(int j = 1; j < nval_local; ++j){
+	   vVX[i] += v[i*nval_local+j] / nval_double;
+	}
     }
     py_var_mu=PyObject_CallMethodObjArgs(pInst, py_name, py_currentStep, py_vx, NULL);
     if (!py_var_mu)
