@@ -385,14 +385,14 @@ neko_LDADD = \
 endif
 
 if ENABLE_PYTHON
-io/nek_pythono: io/nek_pythono.cpp
+io/nek_python.o: io/nek_python.cpp
 	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) -o $@ -c $^
 
 libneko_a_LIBADD = \
-	io/nek_pythono.o
+	io/nek_python.o
 
 neko_LDADD = \
-	io/nek_pythono.o
+	io/nek_python.o
 
 endif
 

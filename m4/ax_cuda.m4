@@ -35,11 +35,13 @@ AC_DEFUN([AX_CUDA],[
 		
 		_CC=$CC
                 _CFLAGS=$CFLAGS
+		_CPPFLAGS=$CPPFLAGS
 		_LIBS=$LIBS
 		AC_LANG_PUSH([C])
 		CC=$NVCC
                 CFLAGS=""
 		LIBS=""
+		CPPFLAGS=""
 
 		AC_CHECK_LIB(cudart, cudaFree,
 		             [have_cuda=yes;CUDA_LIBS="-lcudart"],[have_cuda=no])
@@ -54,6 +56,7 @@ AC_DEFUN([AX_CUDA],[
 		fi
 	        CC=$_CC
                 CFLAGS=$_CFLAGS
+		CPPFLAGS=$_CPPFLAGS
 		AC_LANG_POP([C])
 	fi
 	AC_SUBST(cuda_bcknd)	

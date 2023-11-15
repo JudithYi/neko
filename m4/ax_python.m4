@@ -8,10 +8,10 @@ AC_DEFUN([AX_PYTHON],[
         AS_IF([test -d "$ac_python_path/lib64"],
           	             [suffix="64"],[suffix=""])
 	PYTHON_LDFLAGS="-L/mpcdf/soft/SLE_15/packages/x86_64/gcc/11.2.0/lib64/ -lgfortran -L$ac_python_path/lib$suffix"
-       	PYTHON_CPPFLAGS="-I$ac_python_path/lib$suffix/python3.9/site-packages/numpy/core/include -I$ac_python_path/include/python3.9/"
+       	PYTHON_CPPFLAGS="-I$ac_python_path/lib$suffix/python3.9/site-packages/numpy/core/include -I$ac_python_path/include/python3.9/ -fpermissive"
         PYTHON_LIB="-lpython3.9"
 	fi		
-	],[with_paraview=no])
+	],[with_python=no])
 
 	if test "x${with_python}" != xno; then
 	   if test -d "$ac_python_path"; then
@@ -20,8 +20,10 @@ AC_DEFUN([AX_PYTHON],[
             LDFLAGS="$PYTHON_LDFLAGS $LDFLAGS"
             export CPPFLAGS
             export LDFLAGS
-	   fi	    
-		LIBS="$PYTHON_LIB $LIBS"
+	   fi	   
+	   LIBS="$PYTHON_LIB $LIBS"
+           with_python=yes
+	   have_python=yes
 	fi
 ])
 	
