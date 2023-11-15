@@ -112,8 +112,10 @@ extern "C" void python_setup_(
 
     PyDict_SetItemString(py_uncertOpts, (char*)"compute_uncert_estim", Py_True);
 
-    pArgs = PyTuple_New (1);
+    pArgs = PyTuple_New (2);
     PyTuple_SetItem (pArgs, 0, py_uncertOpts);
+    py_comm_int = PyLong_FromLong(*comm_int);
+    PyTuple_SetItem (pArgs, 1, py_comm_int);
     
     pClass = PyDict_GetItemString (pDict, (char*)"IMACF");
     if (!pClass)

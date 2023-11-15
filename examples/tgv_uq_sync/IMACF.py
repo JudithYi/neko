@@ -33,7 +33,7 @@ class IMACF():
       `update_stats` : incremental update of mean, var, acf 
 
    """
-   def __init__(self, uncertOpts):
+   def __init__(self, uncertOpts, comm_in):
 
       # set options
       self.uncertOpts = uncertOpts
