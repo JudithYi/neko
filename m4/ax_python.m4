@@ -24,6 +24,7 @@ AC_DEFUN([AX_PYTHON],[
 	   LIBS="$PYTHON_LIB $LIBS"
            with_python=yes
 	   have_python=yes
+	   AC_SUBST(have_python)
 	fi
 ])
 	

@@ -203,6 +203,12 @@ extern "C" void adios2_setup_(
         nelbv += temp[i];
         nelbt += temp1[i];
     }
+    total1 = static_cast<std::size_t>(lxyz1 * nelgv);
+    start1 = static_cast<std::size_t>(lxyz1 * nelbv);
+    count1 = static_cast<std::size_t>(lxyz1 * nelv);
+    total3 = static_cast<std::size_t>(lxyz1 * nelgv);
+    start3 = static_cast<std::size_t>(lxyz1 * nelbv);
+    count3 = static_cast<std::size_t>(lxyz1 * nelv);
     io = adios.DeclareIO("writer");
     /*
      *  Fides schema
@@ -210,9 +216,9 @@ extern "C" void adios2_setup_(
     /* VTK connectivity list is always a 1D array, a contiguous enumeration of all points  */
     io.DefineAttribute<std::string>("Fides_Data_Model", "unstructured_single");
 
-    io.DefineAttribute<std::string>("Fides_Cell_Type", "quad");
-    ADIOS_connectivity = io.DefineVariable<int>("connectivity", {total3 * 4}, {start3 * 4}, {count3 * 4});
-    connectivity.resize(count3 * 4);
+    io.DefineAttribute<std::string>("Fides_Cell_Type", "hexahedron");
+    ADIOS_connectivity = io.DefineVariable<int>("connectivity", {total3 * 8}, {start3 * 0}, {count3 * 8});
+    connectivity.resize(count3 * 8);
 
     /* VTK points is one table with the coordinates as columns OR separate 1D variables for each coordinate */
     ADIOS_points = io.DefineVariable<float>("points", {total1, 3}, {start1, 0}, {count1, 3});
@@ -269,11 +275,6 @@ extern "C" void adios2_setup_(
     vDOUBLE[0] = *t_start_in;
     vDOUBLE[1] = *dt_in;
     init_double_const = io.DefineVariable<double>("DOUBLE_CONST", {init_total}, {init_start}, {init_count});
-
-    total1 = static_cast<std::size_t>(lxyz1 * nelgv);
-    start1 = static_cast<std::size_t>(lxyz1 * nelbv);
-    count1 = static_cast<std::size_t>(lxyz1 * nelv);
-    start3 = static_cast<std::size_t>(lxyz1 * nelbt);
 
     vx = io.DefineVariable<double>("VX", {total1}, {start1}, {count1});
     vy = io.DefineVariable<double>("VY", {total1}, {start1}, {count1});
