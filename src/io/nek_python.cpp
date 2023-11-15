@@ -34,6 +34,7 @@ PyObject *py_output_freq_val;
 PyObject *py_compute_uncert_estim;
 PyObject *py_name;
 PyObject *py_var_mu;
+PyObject *py_comm_int;
 
 std::vector<double>vVX;
 int total_size, local_size, nval_local;
