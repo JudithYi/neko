@@ -114,12 +114,7 @@ extern "C" void adios2_setup_(
         nelbv += temp[i];
         nelbt += temp1[i];
     }
-    total1 = static_cast<std::size_t>(lxyz1 * nelgv);
-    start1 = static_cast<std::size_t>(lxyz1 * nelbv);
-    count1 = static_cast<std::size_t>(lxyz1 * nelv);
-    total3 = static_cast<std::size_t>(lxyz1 * nelgv);
-    start3 = static_cast<std::size_t>(lxyz1 * nelbv);
-    count3 = static_cast<std::size_t>(lxyz1 * nelv);
+
     io = adios.DeclareIO("writer");
     writer = io.Open("globalArray", adios2::Mode::Write);
     if (!io.InConfigFile())
@@ -133,35 +128,25 @@ extern "C" void adios2_setup_(
         // Passing parameters to the transport
     }
     
-    vINT_CONST[0]=lx1;    
-    vINT_CONST[1]=ly1;    
-    vINT_CONST[2]=lz1;    
-    vINT_CONST[3]=lx2;    
-    vINT_CONST[4]=ly2;    
-    vINT_CONST[5]=lz2; 
-    vINT_CONST[6]=nelv;    
-    vINT_CONST[7]=nelt;    
-    std::vector<int>temp(size);
-    MPI_Allgather(&nelv, 1, MPI_INT, temp.data(), 1, MPI_INT, comm);
-    nelbv=0;
-    for(i=0;i<rank;++i){
-        nelbv+=temp[i];
-    }
-    MPI_Allgather(&nelt, 1, MPI_INT, temp.data(), 1, MPI_INT, comm);
-    nelbt=0;
-    for(i=0;i<rank;++i){
-        nelbt+=temp[i];
-    }
+    vINT[0]=lx1;    
+    vINT[1]=ly1;    
+    vINT[2]=lz1;    
+    vINT[3]=lx2;    
+    vINT[4]=ly2;    
+    vINT[5]=lz2; 
+    vINT[6]=nelv;    
+    vINT[7]=nelt;    
+
     std::size_t total, start, count;
     count = static_cast<std::size_t>(8);
     total = count * static_cast<std::size_t>(size);
     start = count * static_cast<std::size_t>(rank);
-    init_int_vec1 = io.DefineVariable<int>("INT_CONST", {total}, {start}, {count});
+    init_int_const = io.DefineVariable<int>("INT_CONST", {total}, {start}, {count});
     
     /*adios variables definition*/
-    count = static_cast<std::size_t>(lx1*ly1*lz1*nelv);
-    start = static_cast<std::size_t>(lx1*ly1*lz1*nelbv);
-    total = static_cast<std::size_t>(lx1*ly1*lz1*nelgv);
+    count = static_cast<std::size_t>(lxyz1*nelv);
+    start = static_cast<std::size_t>(lxyz1*nelbv);
+    total = static_cast<std::size_t>(lxyz1*nelgv);
     vx = io.DefineVariable<double>("VX",{total}, {start}, {count});
     vy = io.DefineVariable<double>("VY",{total}, {start}, {count});
     vz = io.DefineVariable<double>("VZ",{total}, {start}, {count});
@@ -170,7 +155,7 @@ extern "C" void adios2_setup_(
 
     writer = io.Open("globalArray", adios2::Mode::Write);
     writer.BeginStep();
-    writer.Put<int>(init_int_vec1, vINT_CONST.data());
+    writer.Put<int>(init_int_const, vINT_CONST.data());
     writer.EndStep();
     if(!rank) std::cout << "In-Situ setting done" << std::endl;
     std::cout << "Nek rank: " << rank << " count: " << nelt << " , start: " << nelbt << " , total: " << nelgt << std::endl;
