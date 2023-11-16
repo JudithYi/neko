@@ -36,7 +36,7 @@ class IMACF():
       `update_stats` : incremental update of mean, var, acf 
 
    """
-   def __init__(self, uncertOpts, comm_in):
+   def __init__(self, uncertOpts, comm_in, nelv_in):
 
       # set options
       self.uncertOpts = uncertOpts
@@ -100,7 +100,7 @@ class IMACF():
       else:
          vINT_CONST=np.zeros(2, dtype=np.int32)
       vINT_CONST[0]=max_acf_lag_raw+1
-      self.nelgv=512 #TODO nelgv from nek
+      self.nelgv=nelv_in #TODO nelgv from nek
       vINT_CONST[1]=self.nelgv
       init_total = self.size * 2
       init_start = self.rank * 2
