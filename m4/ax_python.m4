@@ -25,6 +25,7 @@ AC_DEFUN([AX_PYTHON],[
            with_python=yes
 	   have_python=yes
 	   AC_SUBST(have_python)
+       AC_DEFINE(HAVE_PYTHON,1,[Define if you have ADIOS2.])
 	fi
 ])
 	
