@@ -7,7 +7,7 @@ import time
 sys.path.append('/u/yju/software_gcc11_cuda11.4_python3.9/lib/python3.9/site-packages/adios2/')
 import adios2
 sys.path.append('/u/yju/ADMIRE/NEKO/UQ/neko/examples/tgv_uq_async')
-from IMACF2 import IMACF2
+from IMACF import IMACF
 
 
 tic_total=time.perf_counter()

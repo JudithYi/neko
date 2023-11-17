@@ -127,7 +127,7 @@ extern "C" void adios2_setup_(
         // ISO-POSIX file output is the default transport (called "File")
         // Passing parameters to the transport
     }
-    
+    vINT.resize(8);
     vINT[0]=lx1;    
     vINT[1]=ly1;    
     vINT[2]=lz1;    
@@ -153,9 +153,8 @@ extern "C" void adios2_setup_(
     p = io.DefineVariable<double>("P", {total}, {start}, {count});
     t = io.DefineVariable<double>("T", {total}, {start}, {count});
 
-    writer = io.Open("globalArray", adios2::Mode::Write);
     writer.BeginStep();
-    writer.Put<int>(init_int_const, vINT_CONST.data());
+    writer.Put<int>(init_int_const, vINT.data());
     writer.EndStep();
     if(!rank) std::cout << "In-Situ setting done" << std::endl;
     std::cout << "Nek rank: " << rank << " count: " << nelt << " , start: " << nelbt << " , total: " << nelgt << std::endl;
@@ -176,8 +175,6 @@ extern "C" void adios2_update_(
     writer.Put<double>(vz, w);
     writer.Put<double>(p, pr);
     writer.Put<double>(t, t_in);
-    ++step;
-    writer.Put<int>(vstep, step);
     writer.EndStep();
     dataTime += (std::clock() - startT) / (double) CLOCKS_PER_SEC;
 }

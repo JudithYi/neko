@@ -85,7 +85,7 @@ contains
     real(kind=rp) dt
     integer tstep
     integer iostep
-    iostep = 50
+    iostep = 1
     dt = 0.001
 
     ! initialize work arrays for postprocessing
@@ -133,7 +133,7 @@ contains
     integer :: ntot, i, iostep
     real start_insitu
     real(kind=rp) :: vv, sum_e1(1), e1, e2, sum_e2(1), oo
-    iostep = 50
+    iostep = 1
     start_insitu=mpi_wtime()
     call user_write(tstep, iostep, u, v, w, p)
     timer_insitu=timer_insitu+(mpi_wtime()-start_insitu)
