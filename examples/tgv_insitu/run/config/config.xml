@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<!-- Config XML file  -->
+
+<adios-config>
+    <io name="writer">     
+
+        <engine type="InSituMPI">
+            
+            <!-- for vectorized memory operations, make sure your system 
+                 enables threads--> 
+            <parameter key="Profile" value="On"/>
+            
+        </engine>
+    </io>
+
+    <io name="writerISMPI">     
+
+        <engine type="InSituMPI">
+            <!--parameter key="MarshalMethod" value="BP"/-->
+
+            <!--parameter key="DataTransport" value="RDMA"/-->
+            <!--parameter key="ReserveQueueLimit", value="3"-->
+            
+        </engine>
+    </io>
+    
+    <io name="writer0">
+
+        <engine type="BPFile">
+            
+        </engine>
+    </io>
+
+    <io name="reader">
+
+        <engine type="InSituMPI">
+            <!--parameter key="DataTransport" value="RDMA"/-->
+            <!--parameter key="ReserveQueueLimit", value="3"/-->
+            <!--parameter key="MarshalMethod" value="BP"/-->
+            
+        </engine>
+    </io>
+
+    <io name="inputReader">
+
+        <engine type="BPFile">
+            
+        </engine>
+    </io>
+
+
+</adios-config>
