@@ -217,7 +217,7 @@ extern "C" void adios2_setup_(
     io.DefineAttribute<std::string>("Fides_Data_Model", "unstructured_single");
 
     io.DefineAttribute<std::string>("Fides_Cell_Type", "hexahedron");
-    ADIOS_connectivity = io.DefineVariable<int>("connectivity", {total3 * 8}, {start3 * 0}, {count3 * 8});
+    ADIOS_connectivity = io.DefineVariable<int>("connectivity", {total3 * 8}, {start3 * 8}, {count3 * 8});
     connectivity.resize(count3 * 8);
 
     /* VTK points is one table with the coordinates as columns OR separate 1D variables for each coordinate */
