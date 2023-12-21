@@ -266,7 +266,7 @@ extern "C" void adios2_setup_(
     vINT[9] = nelgt;
     vINT[10] = *iostep_in;
     vINT[11] = 1;
-    init_int_const = io.DefineVariable<int>("INT_CONST", {init_total}, {init_start}, {init_count});
+    //init_int_const = io.DefineVariable<int>("INT_CONST", {init_total}, {init_start}, {init_count});
 
     init_count = 2;
     init_total = init_count*static_cast<std::size_t>(size);
@@ -274,7 +274,7 @@ extern "C" void adios2_setup_(
     vDOUBLE.resize(init_count);
     vDOUBLE[0] = *t_start_in;
     vDOUBLE[1] = *dt_in;
-    init_double_const = io.DefineVariable<double>("DOUBLE_CONST", {init_total}, {init_start}, {init_count});
+    //init_double_const = io.DefineVariable<double>("DOUBLE_CONST", {init_total}, {init_start}, {init_count});
 
     vx = io.DefineVariable<double>("VX", {total1}, {start1}, {count1});
     vy = io.DefineVariable<double>("VY", {total1}, {start1}, {count1});
@@ -284,8 +284,8 @@ extern "C" void adios2_setup_(
     vstep = io.DefineVariable<int>("step");
     writer.Put<int>(ADIOS_connectivity, connectivity.data());
     writer.Put<float>(ADIOS_points, points.data());
-    writer.Put<int>(init_int_const, vINT.data());
-    writer.Put<double>(init_double_const, vDOUBLE.data());
+    //writer.Put<int>(init_int_const, vINT.data());
+    //writer.Put<double>(init_double_const, vDOUBLE.data());
 
     writer.EndStep();
 
