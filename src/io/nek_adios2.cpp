@@ -235,7 +235,7 @@ extern "C" void adios2_setup_(
     io.DefineAttribute<std::string>("Fides_Variable_Associations", assocList.data(), assocList.size());
     step = 0;
 
-    writer = io.Open("globalArray", adios2::Mode::Write);
+    writer = io.Open("globalArray.bp", adios2::Mode::Write);
     if (!io.InConfigFile())
     {
         // if not defined by user, we can change the default settings
