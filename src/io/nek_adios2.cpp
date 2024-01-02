@@ -6,7 +6,7 @@
 #include <vector>
 
 int lx1, ly1, lz1, lx2, ly2, lz2;
-int lxyz1, lxyz2; 
+int lxyz1, lxyz2;
 int nelv;
 int nelgv, nelgt;
 int nelbv, nelbt;
@@ -33,7 +33,7 @@ adios2::Variable<int> ADIOS_connectivity;
 adios2::Variable<float> ADIOS_points;
 std::vector<int> connectivity;
 std::vector<float> points;
-int step; 
+int step;
 
 /* DATA STREAMER */
 int ifile;
@@ -171,44 +171,57 @@ extern "C" void adios2_setup_(
     const double *t_in,
     const double *t_start_in,
     const double *dt_in,
-    const int *iostep_in
-){
+    const int *iostep_in)
+{
     startTotal = std::clock();
-    std::string configFile="config/config.xml";
+    std::string configFile = "config/config.xml";
     MPI_Comm comm = MPI_Comm_f2c(*comm_int);
     adios = adios2::ADIOS(configFile, comm);
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
+
+    // Number of elements (per process)
+    nelv = *nelv_in;
+    unsigned int nelt = static_cast<unsigned int>((*nelv_in));
+
+    // Points in one element
     lx1 = *lx1_in;
     ly1 = *ly1_in;
     lz1 = *lz1_in;
-
-    lx2 = *lx1_in;
-    ly2 = *ly1_in;
-    lz2 = *lz1_in;
-
     lxyz1 = lx1 * ly1 * lz1;
+
+    // Cells in one element
+    lx2 = *lx1_in - 1;
+    ly2 = *ly1_in - 1;
+    lz2 = *lz1_in - 1;
+    lxyz2 = lx2 * ly2 * lz2;
 
     nelgt = *nelgt_in;
     nelgv = *nelgv_in;
-    nelv = *nelv_in;
-    unsigned int nelt = static_cast<unsigned int>((*nelv_in));
-    std::vector<int>temp(size);
-    std::vector<int>temp1(size);
-    MPI_Allgather(&nelv, 1, MPI_INT, temp.data(), 1,MPI_INT, comm);
-    MPI_Allgather(&nelt, 1, MPI_INT, temp1.data(), 1,MPI_INT, comm);
+
+    std::vector<int> temp(size);
+    std::vector<int> temp1(size);
+    MPI_Allgather(&nelv, 1, MPI_INT, temp.data(), 1, MPI_INT, comm);
+    MPI_Allgather(&nelt, 1, MPI_INT, temp1.data(), 1, MPI_INT, comm);
     nelbt = 0;
     nelbv = 0;
-    for(i=0;i<rank;++i){
+    for (i = 0; i < rank; ++i)
+    {
         nelbv += temp[i];
         nelbt += temp1[i];
     }
     total1 = static_cast<std::size_t>(lxyz1 * nelgv);
     start1 = static_cast<std::size_t>(lxyz1 * nelbv);
     count1 = static_cast<std::size_t>(lxyz1 * nelv);
-    total3 = static_cast<std::size_t>(lxyz1 * nelgv);
-    start3 = static_cast<std::size_t>(lxyz1 * nelbv);
-    count3 = static_cast<std::size_t>(lxyz1 * nelv);
+    total3 = static_cast<std::size_t>(lxyz2 * nelgt);
+    start3 = static_cast<std::size_t>(lxyz2 * nelbt);
+    count3 = static_cast<std::size_t>(lxyz2 * nelt);
+    std::cout << "Rank " << rank << " lxyz1 = " << lxyz1 << " nelgv = " << nelgv << " nelbv = " << nelbv
+              << " nelv = " << nelv
+              << " nelgt = " << nelgt << " nelbt = " << nelbt
+              << " npoints = " << lxyz1 << " ncells = " << lxyz2
+              << std::endl;
+
     io = adios.DeclareIO("writer");
     /*
      *  Fides schema
@@ -246,13 +259,13 @@ extern "C" void adios2_setup_(
         // ISO-POSIX file output is the default transport (called "File")
         // Passing parameters to the transport
     }
-    
-    //writer0.BeginStep();
+
+    // writer0.BeginStep();
     writer.BeginStep();
-    
+
     init_count = 12;
-    init_total = init_count*static_cast<std::size_t>(size);
-    init_start = init_count*static_cast<std::size_t>(rank);
+    init_total = init_count * static_cast<std::size_t>(size);
+    init_start = init_count * static_cast<std::size_t>(rank);
     vINT.resize(init_count);
     vINT[0] = lx1;
     vINT[1] = ly1;
@@ -266,15 +279,15 @@ extern "C" void adios2_setup_(
     vINT[9] = nelgt;
     vINT[10] = *iostep_in;
     vINT[11] = 1;
-    //init_int_const = io.DefineVariable<int>("INT_CONST", {init_total}, {init_start}, {init_count});
+    // init_int_const = io.DefineVariable<int>("INT_CONST", {init_total}, {init_start}, {init_count});
 
     init_count = 2;
-    init_total = init_count*static_cast<std::size_t>(size);
-    init_start = init_count*static_cast<std::size_t>(rank);
+    init_total = init_count * static_cast<std::size_t>(size);
+    init_start = init_count * static_cast<std::size_t>(rank);
     vDOUBLE.resize(init_count);
     vDOUBLE[0] = *t_start_in;
     vDOUBLE[1] = *dt_in;
-    //init_double_const = io.DefineVariable<double>("DOUBLE_CONST", {init_total}, {init_start}, {init_count});
+    // init_double_const = io.DefineVariable<double>("DOUBLE_CONST", {init_total}, {init_start}, {init_count});
 
     vx = io.DefineVariable<double>("VX", {total1}, {start1}, {count1});
     vy = io.DefineVariable<double>("VY", {total1}, {start1}, {count1});
@@ -284,14 +297,9 @@ extern "C" void adios2_setup_(
     vstep = io.DefineVariable<int>("step");
     writer.Put<int>(ADIOS_connectivity, connectivity.data());
     writer.Put<float>(ADIOS_points, points.data());
-    //writer.Put<int>(init_int_const, vINT.data());
-    //writer.Put<double>(init_double_const, vDOUBLE.data());
+    // writer.Put<int>(init_int_const, vINT.data());
+    // writer.Put<double>(init_double_const, vDOUBLE.data());
 
-    writer.EndStep();
-
-
-    /* End of Fides schema */
-    writer.BeginStep();
     /*
     But vtk related information such as points and connectivity are communicated in this step
     Also the initail values of p (pressure), vx (velocity in x direction), vy (velocity in y direction), vz (velocity in z direction), and t (temperature) are communicated.
@@ -304,8 +312,9 @@ extern "C" void adios2_setup_(
     writer.Put<int>(vstep, step);
     writer.EndStep();
 
-    firstStep=true;
-    if(!rank) std::cout << "In-Situ setting done" << std::endl;
+    firstStep = true;
+    if (!rank)
+        std::cout << "In-Situ setting done" << std::endl;
     std::cout << "Nek rank: " << rank << " count: " << nelt << " , start: " << nelbt << " , total: " << nelgt << std::endl;
 }
 
@@ -314,8 +323,8 @@ extern "C" void adios2_update_(
     const double *u,
     const double *w,
     const double *pr,
-    const double *t_in
-){
+    const double *t_in)
+{
     startT = std::clock();
     writer.BeginStep();
 
@@ -327,12 +336,13 @@ extern "C" void adios2_update_(
     ++step;
     writer.Put<int>(vstep, step);
     writer.EndStep();
-    dataTime += (std::clock() - startT) / (double) CLOCKS_PER_SEC;
+    dataTime += (std::clock() - startT) / (double)CLOCKS_PER_SEC;
 }
 
-extern "C" void adios2_finalize_(){
+extern "C" void adios2_finalize_()
+{
     writer.Close();
-    std::cout <<  "rank: " << rank << " sin-situ time: " << dataTime << "s, total time: " << (std::clock() - startTotal) / (double) CLOCKS_PER_SEC << "s. " << std::endl;
+    std::cout << "rank: " << rank << " sin-situ time: " << dataTime << "s, total time: " << (std::clock() - startTotal) / (double)CLOCKS_PER_SEC << "s. " << std::endl;
 }
 
 extern "C" void adios2_stream_(
@@ -342,8 +352,8 @@ extern "C" void adios2_stream_(
     const double *v,
     const double *w,
     const double *mass1,
-    const double *temp
-){
+    const double *temp)
+{
     startT = std::clock();
     // Begin a step of the writer
     writer_st.BeginStep();
@@ -354,7 +364,7 @@ extern "C" void adios2_stream_(
     writer_st.Put<double>(bm1_st, mass1);
     writer_st.Put<int>(lglelw_st, lglel);
     writer_st.EndStep();
-    dataTime += (std::clock() - startT) / (double) CLOCKS_PER_SEC;
+    dataTime += (std::clock() - startT) / (double)CLOCKS_PER_SEC;
 }
 
 extern "C" void adios2_setup_data_streamer_(
@@ -367,9 +377,9 @@ extern "C" void adios2_setup_data_streamer_(
     const double *yml,
     const double *zml,
     const int *if_asynchronous,
-    const int *comm_int
-){
-    std::string configFile="adios2_config/config.xml";
+    const int *comm_int)
+{
+    std::string configFile = "adios2_config/config.xml";
     MPI_Comm comm = MPI_Comm_f2c(*comm_int);
     adios = adios2::ADIOS(configFile, comm);
     MPI_Comm_rank(comm, &rank);
@@ -384,7 +394,7 @@ extern "C" void adios2_setup_data_streamer_(
     // Determine if asyncrhonous operation will be needed for this set up
     unsigned int decide_stream = static_cast<unsigned int>((*if_asynchronous));
     decide_stream_global = decide_stream;
-    
+
     // Number of elements in my rank.
     unsigned int nelv = static_cast<unsigned int>((*nelvin));
 
@@ -393,9 +403,9 @@ extern "C" void adios2_setup_data_streamer_(
     start *= static_cast<unsigned int>(*nval);
 
     // n is count, i.e number of entries in the array in my rank
-    unsigned int n = static_cast<unsigned int> (*nval) * nelv;
-    // gn is the total size of the arrays, not per io rank 
-    unsigned int gn = static_cast<unsigned int>((*nelgv)*(*nval));
+    unsigned int n = static_cast<unsigned int>(*nval) * nelv;
+    // gn is the total size of the arrays, not per io rank
+    unsigned int gn = static_cast<unsigned int>((*nelgv) * (*nval));
     std::cout << rank << ": " << gn << ", " << start << "," << n << std::endl;
 
     // Create the adios2 variables for writer that depend on the current start and n
@@ -411,52 +421,55 @@ extern "C" void adios2_setup_data_streamer_(
     z = io_head.DefineVariable<double>("Z", {gn}, {start}, {n});
 
     // If the process is asynchronous, define the relevant variables for writer_st
-    if (decide_stream == 1){
-	    p_st = io_asynchronous.DefineVariable<double>("P", {gn}, {start}, {n});
-	    vx_st = io_asynchronous.DefineVariable<double>("VX", {gn}, {start}, {n});
-	    vy_st = io_asynchronous.DefineVariable<double>("VY", {gn}, {start}, {n});
-	    vz_st = io_asynchronous.DefineVariable<double>("VZ", {gn}, {start}, {n});
-	    bm1_st = io_asynchronous.DefineVariable<double>("BM1", {gn}, {start}, {n});
+    if (decide_stream == 1)
+    {
+        p_st = io_asynchronous.DefineVariable<double>("P", {gn}, {start}, {n});
+        vx_st = io_asynchronous.DefineVariable<double>("VX", {gn}, {start}, {n});
+        vy_st = io_asynchronous.DefineVariable<double>("VY", {gn}, {start}, {n});
+        vz_st = io_asynchronous.DefineVariable<double>("VZ", {gn}, {start}, {n});
+        bm1_st = io_asynchronous.DefineVariable<double>("BM1", {gn}, {start}, {n});
     }
 
-
-    // Do everything again for the global indices 
+    // Do everything again for the global indices
     nelv = static_cast<unsigned int>((*nelvin));
     start = static_cast<unsigned int>(*nelb);
-    n = static_cast<unsigned int> (nelv);
+    n = static_cast<unsigned int>(nelv);
     gn = static_cast<unsigned int>((*nelgv));
     // Define variable for compression writer
     lglelw = io.DefineVariable<int>("LGLEL_OUT", {gn}, {start}, {n});
     // Define variable for asyncrhonous writet
-    if (decide_stream == 1){
-    	lglelw_st = io_asynchronous.DefineVariable<int>("LGLEL", {gn}, {start}, {n});
+    if (decide_stream == 1)
+    {
+        lglelw_st = io_asynchronous.DefineVariable<int>("LGLEL", {gn}, {start}, {n});
     }
 
     // Write the mesh information only once (Currently commented out).
-    //writer_head = io_head.Open("geo.bp", adios2::Mode::Write);
-    //writer_head.Put<double>(x, xml);
-    //writer_head.Put<double>(y, yml);
-    //writer_head.Put<double>(z, yml);
-    //writer_head.Close();
-    //if(!rank)
-	//std::cout << "geo.bp written" << std::endl;
-    
+    // writer_head = io_head.Open("geo.bp", adios2::Mode::Write);
+    // writer_head.Put<double>(x, xml);
+    // writer_head.Put<double>(y, yml);
+    // writer_head.Put<double>(z, yml);
+    // writer_head.Close();
+    // if(!rank)
+    // std::cout << "geo.bp written" << std::endl;
+
     // If asyncrhonous execution, open the global array
-    if (decide_stream == 1){
-	std::cout << "create global array" << std::endl;
-    	writer_st = io_asynchronous.Open("globalArray", adios2::Mode::Write);
+    if (decide_stream == 1)
+    {
+        std::cout << "create global array" << std::endl;
+        writer_st = io_asynchronous.Open("globalArray", adios2::Mode::Write);
     }
 
-    // Initialize global variables for writing. This could be done in global definition    
-    ifile = 0 ;
-    ifilew = 0 ;
+    // Initialize global variables for writing. This could be done in global definition
+    ifile = 0;
+    ifilew = 0;
 }
 
-extern "C" void adios2_finalize_data_streamer_(){
-    if (decide_stream_global == 1){
-	std::cout << "Close global array" << std::endl;
-    	writer_st.Close();
-    	std::cout <<  "rank: " << rank << " in-situ time: " << dataTime << "s." << std::endl;
+extern "C" void adios2_finalize_data_streamer_()
+{
+    if (decide_stream_global == 1)
+    {
+        std::cout << "Close global array" << std::endl;
+        writer_st.Close();
+        std::cout << "rank: " << rank << " in-situ time: " << dataTime << "s." << std::endl;
     }
-
 }
