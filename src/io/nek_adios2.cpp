@@ -287,11 +287,8 @@ extern "C" void adios2_setup_(
     //writer.Put<int>(init_int_const, vINT.data());
     //writer.Put<double>(init_double_const, vDOUBLE.data());
 
-    writer.EndStep();
-
-
     /* End of Fides schema */
-    writer.BeginStep();
+    
     /*
     But vtk related information such as points and connectivity are communicated in this step
     Also the initail values of p (pressure), vx (velocity in x direction), vy (velocity in y direction), vz (velocity in z direction), and t (temperature) are communicated.
