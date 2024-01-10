@@ -183,11 +183,12 @@ extern "C" void adios2_setup_(
     ly1 = *ly1_in;
     lz1 = *lz1_in;
 
-    lx2 = *lx1_in;
-    ly2 = *ly1_in;
-    lz2 = *lz1_in;
+    lx2 = lx1 - 1;
+    ly2 = ly1 - 1;
+    lz2 = lz1 - 1;
 
     lxyz1 = lx1 * ly1 * lz1;
+    lxyz2 = lx2 * ly2 * lz2;
 
     nelgt = *nelgt_in;
     nelgv = *nelgv_in;
@@ -206,9 +207,9 @@ extern "C" void adios2_setup_(
     total1 = static_cast<std::size_t>(lxyz1 * nelgv);
     start1 = static_cast<std::size_t>(lxyz1 * nelbv);
     count1 = static_cast<std::size_t>(lxyz1 * nelv);
-    total3 = static_cast<std::size_t>(lxyz1 * nelgv);
-    start3 = static_cast<std::size_t>(lxyz1 * nelbv);
-    count3 = static_cast<std::size_t>(lxyz1 * nelv);
+    total3 = static_cast<std::size_t>(lxyz2 * nelgv);
+    start3 = static_cast<std::size_t>(lxyz2 * nelbv);
+    count3 = static_cast<std::size_t>(lxyz2 * nelv);
     io = adios.DeclareIO("writer");
     /*
      *  Fides schema
